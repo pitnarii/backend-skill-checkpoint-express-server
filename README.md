@@ -7,7 +7,7 @@ This project is a simple Express.js API server for managing questions and answer
 1. Open the project folder.
 2. Install dependencies:
    ```bash
-   npm install
+   npm install express nodemon
    ```
 3. Make sure PostgreSQL is running and the database named `quora` is available.
 4. Update the database connection string in `server/utils/db.mjs` if needed.
