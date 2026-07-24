@@ -154,21 +154,36 @@ questionRouter.put("/:questionId", async (req, res) => {
 });
 
 //ผู้ใช้งานสามารถที่จะลบคำถามได้
-questionRouter.delete("/:questionId", async (req, res) => {
+//เมื่อลบคำถามออก คำตอบก็จะถูกลบตามคำถามนั้นๆ ไปด้วย
+questionRouter.delete("/:questionId/answers", async (req, res) => {
   try {
-    const questionIdfromClient = req.params.questionId;
-    const result = await connectionPool.query(
-      `delete from questions
-      where id = $1`,
-      [questionIdfromClient]
+    const questionId = Number.parseInt(req.params.questionId, 10);
+
+    if (!Number.isInteger(questionId)) {
+      return res.status(400).json({ message: "Invalid question id." });
+    }
+
+    const existingQuestion = await connectionPool.query(
+      `select id from questions where id = $1`,
+      [questionId]
     );
 
-    if (result.rowCount === 0) {
+    if (existingQuestion.rowCount === 0) {
       return res.status(404).json({ message: "Question not found." });
     }
 
+    await connectionPool.query(
+      `delete from answers where question_id = $1`,
+      [questionId]
+    );
+
+    await connectionPool.query(
+      `delete from questions where id = $1`,
+      [questionId]
+    );
+
     return res.status(200).json({
-      message: "Question post has been deleted successfully.",
+      message: "Question and its answers deleted successfully.",
     });
   } catch (error) {
     console.error(error);
@@ -195,9 +210,6 @@ questionRouter.get("/:questionId/answers", async (req, res) => {
     console.error(error);
     return res.status(500).json({ message: "Unable to fetch answers." });
   }
-})
-
-
-
+});
 
 export default questionRouter;
