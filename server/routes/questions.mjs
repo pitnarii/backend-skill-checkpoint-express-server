@@ -44,38 +44,92 @@ questionRouter.get("/", async (req, res) => {
       data: results.rows,
     });
   } catch (error) {
-    console.error(err); 
-    return res.status(500).json(
-      {"message": "Unable to fetch questions."}
-    );
+    console.error(error);
+    return res.status(500).json({ message: "Unable to fetch questions." });
   }
-})
+});
 
 //ผู้ใช้งานสามารถที่จะดูคำถามแต่ละอันได้ ด้วย Id ของคำถามได้
 
-questionRouter.get("/:questionID", async (req, res) => {
+questionRouter.get("/:questionId", async (req, res) => {
   try {
-    const { questionID } = req.params;
+    const { questionId } = req.params;
     const results = await connectionPool.query(
       `select * from questions where id = $1`,
-      [questionID]
+      [questionId]
     );
     if (!results.rows[0]) {
-      return res.status(404).json({ "message": "Question not found." });
+      return res.status(404).json({ message: "Question not found." });
     }
     return res.status(200).json({
       data: results.rows[0],
     });
-  } catch (err) {
-    console.error(err); 
-    return res.status(500).json(
-      { "message": "Unable to fetch questions." }
-    );
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Unable to fetch questions." });
   }
 });
 
 //้ใช้งานสามารถที่จะแก้ไขหัวข้อ หรือคำอธิบายของคำถามได้
+questionRouter.put("/:questionId", async (req, res) => {
+  try {
+    const questionIdfromClient = req.params.questionId;
+    const updatedQuestion = { ...req.body }; //access to update question request from clients
 
+    if (!updatedQuestion || typeof updatedQuestion !== "object") {
+      return res.status(400).json({ message: "Invalid request data." });
+    }
 
+    const result = await connectionPool.query(
+      `
+      update questions
+      set title = $2,
+          description = $3,
+          category = $4
+      where id = $1
+      `,
+      [
+        questionIdfromClient,
+        updatedQuestion.title,
+        updatedQuestion.description,
+        updatedQuestion.category,
+      ]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Question not found." });
+    }
+
+    return res.status(200).json({ message: "Question updated successfully." });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Unable to fetch question." });
+  }
+});
+
+//ผู้ใช้งานสามารถที่จะลบคำถามได้
+questionRouter.delete("/:questionId", async (req, res) => {
+  try {
+    const questionIdfromClient = req.params.questionId;
+    const result = await connectionPool.query(
+      `delete from questions
+      where id = $1`,
+      [questionIdfromClient]
+    );
+
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: "Question not found." });
+    }
+
+    return res.status(200).json({
+      message: "Question post has been deleted successfully.",
+    });
+  } catch (error) {
+    console.error(error);
+    return res.status(500).json({ message: "Unable to delete question." });
+  }
+});
+
+//ผู้ใช้งานสามารถที่จะค้นหาคำถามจากหัวข้อ หรือหมวดหมู่ได้
 
 export default questionRouter;
